@@ -13,8 +13,13 @@ output:
 ```{r setup, include=FALSE}
 
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
+library(dplyr)
 library(technocolour)
+library(lubridate)
+library(dplyr)
+library(readr)
+library(purrr)
+library(tidyr)
 source(here::here("R", "data_fns.R"))
 source(here::here("R", "plot_fns.R"))
 source(here::here("R", "utils.R"))

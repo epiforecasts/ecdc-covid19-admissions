@@ -11,17 +11,22 @@ Encoding: UTF-8
 Language: en-GB
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2.9000
-Imports:
+Depends:
   data.table,
   devtools,
+  dplyr,
   EpiNow2,
   EpiSoon,
   EuroForecastHub,
   forecastHybrid,
+  ggplot2,
   here, 
+  purrr,
+  readr,
+  rmetalog,
+  stringr,
   technocolour,
-  tidyverse, 
-  rmetalog 
+  tidyr
 Remotes:
   sophiemeakin/technocolour,
   epiforecasts/EpiSoon,

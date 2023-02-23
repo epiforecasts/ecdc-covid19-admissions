@@ -9,10 +9,6 @@ fdate <- lubridate::floor_date(lubridate::today(),
 
 # Set up ------------------------------------------------------------------
 
-library(tidyverse)
-library(rmetalog)
-library(EpiNow2)
-
 # Using functions from covid19-hospital-activity (Trust-level admissions forecasts)
 devtools::source_url("https://raw.githubusercontent.com/epiforecasts/covid19-hospital-activity/main/R/forecast_fns.R")
 devtools::source_url("https://raw.githubusercontent.com/seabbs/regional-secondary/master/regional-secondary.R")
