@@ -57,11 +57,11 @@ load_jhu_cases <- function(weekly = TRUE, end_date){
 
 load_ecdc_hosps <- function(){
  
-  dat_raw <- read_csv(file = "https://raw.githubusercontent.com/epiforecasts/covid19-forecast-hub-europe/main/data-truth/OWID/truncated_OWID-Weekly%20Incident%20Hospitalizations.csv") %>%
+  dat_raw <- read_csv(file = "https://raw.githubusercontent.com/epiforecasts/covid19-forecast-hub-europe/main/data-truth/OWID/truncated_OWID-Incident%20Hospitalizations.csv") %>%
     rename(adm = value)
   
   out <- dat_raw %>%
-    rename(week = target_end_date) %>%
+    rename(week = date) %>%
     select(location_name, location, week, adm)
   
   return(out)
