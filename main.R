@@ -89,6 +89,8 @@ ggsave(plot = g_case,
 
 
 # Time series ensemble ----------------------------------------------------
+#
+safe_timeseries_samples <- purrr::safely(timeseries_samples)
 
 tsensemble_samples <- purrr::map_df(.x = sort(unique(fcast_ids$trunc)),
               .f = ~ {
@@ -98,14 +100,14 @@ tsensemble_samples <- purrr::map_df(.x = sort(unique(fcast_ids$trunc)),
                 
                 fdate_int <- unique(fcast_ids$last_rep[which(fcast_ids$trunc == .x)])
                 
-                out_samples <- timeseries_samples(data = dat_int,
-                                                  yvar = "adm",
-                                                  horizon = 4 + .x/7,
-                                                  train_from = fdate_int - 8*7,
-                                                  forecast_from = fdate_int,
-                                                  models = "aez")
+                out_samples <- safe_timeseries_samples(data = dat_int,
+                                                       yvar = "adm",
+                                                       horizon = 4 + .x/7,
+                                                       train_from = fdate_int - 8*7,
+                                                       forecast_from = fdate_int,
+                                                       models = "aez")
                 
-                return(out_samples)
+                return(out_samples$result)
                 
               }) %>%
   bind_rows() %>%
@@ -142,16 +144,16 @@ arimareg_samples <- purrr::map_df(.x = sort(unique(fcast_ids$trunc)),
                   filter(id %in% fcast_ids$id[which(fcast_ids$trunc == .x)])
                 
                 fdate_int <- unique(fcast_ids$last_rep[which(fcast_ids$trunc == .x)])
+
+                out_samples <- safe_timeseries_samples(data = dat_int,
+                                                       yvar = "adm",
+                                                       xvars = c("cases_lag1"),
+                                                       horizon = 28 + .x,
+                                                       train_from = fdate_int - 8*7,
+                                                       forecast_from = fdate_int,
+                                                       models = "a")
                 
-                out_samples <- timeseries_samples(data = dat_int,
-                                                  yvar = "adm",
-                                                  xvars = c("cases_lag1"),
-                                                  horizon = 28 + .x,
-                                                  train_from = fdate_int - 8*7,
-                                                  forecast_from = fdate_int,
-                                                  models = "a")
-                
-                return(out_samples)
+                return(out_samples$result)
                 
               }) %>%
   bind_rows() %>%
