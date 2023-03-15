@@ -47,46 +47,51 @@ obs_dat <- raw_dat %>%
   filter(location %in% fcast_ids$id) %>%
   select(id = location, date = week, cases, adm)
 
-# Forecast median (point)
-forecast_point <- raw_case_forecast$point_forecast %>%
-  select(id = location, date = target_end_date, cases = value)
+dat <- obs_dat |>
+  filter(!is.na(adm))
 
-# Forecast samples
-grid <- expand_grid(id = unique(raw_case_forecast$raw_forecast$location),
-                    target_date = unique(raw_case_forecast$raw_forecast$target_end_date))
-forecast_samples <- map2_df(.x = grid$id,
-                            .y = grid$target_date,
-                            .f = ~ {
+if (nrow(raw_case_forecast$raw_forecast) > 0) {
+  # Forecast median (point)
+  forecast_point <- raw_case_forecast$point_forecast %>%
+    select(id = location, date = target_end_date, cases = value)
+
+  # Forecast samples
+  grid <- expand_grid(id = unique(raw_case_forecast$raw_forecast$location),
+                      target_date = unique(raw_case_forecast$raw_forecast$target_end_date))
+  forecast_samples <- map2_df(.x = grid$id,
+                              .y = grid$target_date,
+                              .f = ~ {
                               
-                              dat_in <- raw_case_forecast$raw_forecast %>%
-                                filter(location == .x,
-                                       target_end_date == .y)
+                                dat_in <- raw_case_forecast$raw_forecast %>%
+                                  filter(location == .x,
+                                         target_end_date == .y)
                               
-                              out <- get_ensemble_samples(dat = dat_in)
+                                out <- get_ensemble_samples(dat = dat_in)
                               
-                            }) %>%
-  bind_rows() %>%
-  select(id = location, date = target_end_date, sample, cases = value)
+                              }) %>%
+    bind_rows() %>%
+    select(id = location, date = target_end_date, sample, cases = value)
 
-# Data for ARIMA models 
-dat <- obs_dat %>%
-  bind_rows(forecast_point) %>%
-  group_by(id) %>%
-  mutate(date = as.Date(date),
-         cases_lag1 = lag(cases, 1))
+  # Data for ARIMA models
+  dat <- dat %>%
+    bind_rows(forecast_point)
 
+  # Vis hub-ensemble case forecast ------------------------------------------
 
-# Vis hub-ensemble case forecast ------------------------------------------
+  g_case <- plot_ensemble(dat_obs = raw_dat,
+                          dat_for = raw_case_forecast$raw_forecast,
+                          regions = fcast_ids$id,
+                          forecast_date = fdate)
 
-g_case <- plot_ensemble(dat_obs = raw_dat,
-                        dat_for = raw_case_forecast$raw_forecast,
-                        regions = fcast_ids$id,
-                        forecast_date = fdate)
+  ggsave(plot = g_case,
+         filename = here::here("data", "figures", "current_case_forecast.pdf"),
+         height = 9, width = 14, units = "in", dpi = 500)
+}
 
-ggsave(plot = g_case,
-       filename = here::here("data", "figures", "current_case_forecast.pdf"),
-       height = 9, width = 14, units = "in", dpi = 500)
-
+dat <- dat %>%
+    group_by(id) %>%
+    mutate(date = as.Date(date),
+           cases_lag1 = lag(cases, 1))
 
 # Time series ensemble ----------------------------------------------------
 #
@@ -97,7 +102,7 @@ tsensemble_samples <- purrr::map_df(.x = sort(unique(fcast_ids$trunc)),
                 
                 dat_int <- dat %>%
                   filter(id %in% fcast_ids$id[which(fcast_ids$trunc == .x)])
-                
+
                 fdate_int <- unique(fcast_ids$last_rep[which(fcast_ids$trunc == .x)])
                 
                 out_samples <- safe_timeseries_samples(data = dat_int,
@@ -141,8 +146,9 @@ arimareg_samples <- purrr::map_df(.x = sort(unique(fcast_ids$trunc)),
               .f = ~ {
                 
                 dat_int <- dat %>%
-                  filter(id %in% fcast_ids$id[which(fcast_ids$trunc == .x)])
-                
+                  filter(id %in% fcast_ids$id[which(fcast_ids$trunc == .x)],
+                         !is.na(cases_lag1))
+
                 fdate_int <- unique(fcast_ids$last_rep[which(fcast_ids$trunc == .x)])
 
                 out_samples <- safe_timeseries_samples(data = dat_int,
@@ -158,30 +164,35 @@ arimareg_samples <- purrr::map_df(.x = sort(unique(fcast_ids$trunc)),
               }) %>%
   bind_rows() %>%
   mutate(model = "ARIMA regression")
-  
-arimareg_summary <- forecast_summary(samples = arimareg_samples,
+
+if (nrow(arimareg_samples) > 0) {
+  arimareg_summary <- forecast_summary(samples = arimareg_samples,
                                        quantiles = c(0.01, 0.025,
                                                      seq(from = 0.05, to = 0.95, by = 0.05),
                                                      0.975, 0.99)) %>%
-  mutate(date_horizon = forecast_from + (7*horizon),
-         horizon = as.numeric(date_horizon - fdate)/7,
-         forecast_from = fdate,) %>%
-  filter(date_horizon %in% fhorizons,
-         quantile_label != "upper_0") %>%
-  select(-quantile_label)
+    mutate(date_horizon = forecast_from + (7*horizon),
+           horizon = as.numeric(date_horizon - fdate)/7,
+           forecast_from = fdate,) %>%
+    filter(date_horizon %in% fhorizons,
+           quantile_label != "upper_0") %>%
+    select(-quantile_label)
 
-file_name <- paste0("arimareg_", fdate, ".csv")
-write_csv(arimareg_summary,
-          file = here::here("data", "forecasts-raw", "arima_regression", file_name))
+  file_name <- paste0("arimareg_", fdate, ".csv")
+  write_csv(arimareg_summary,
+            file = here::here("data", "forecasts-raw", "arima_regression", file_name))
 
-format_forecast(forecast_summary = arimareg_summary,
-                file_name = paste0(fdate + 1, "-epiforecasts-arimareg.csv"),
-                file_path = here::here("data-processed", "epiforecasts-arimareg"))
-
+  format_forecast(forecast_summary = arimareg_summary,
+                  file_name = paste0(fdate + 1, "-epiforecasts-arimareg.csv"),
+                  file_path = here::here("data-processed", "epiforecasts-arimareg"))
+}
 
 # Case-convolution --------------------------------------------------------
 
-convolution_samples <- purrr::map_df(.x = sort(unique(fcast_ids$trunc)),
+models = c("Time series ensemble", "ARIMA regression")
+
+if (nrow(raw_case_forecast$raw_forecast) > 0) {
+  models <- c(models, "Case-convolution")
+  convolution_samples <- purrr::map_df(.x = sort(unique(fcast_ids$trunc)),
               .f = ~ {
                 
                 fdate_int <- unique(fcast_ids$last_rep[which(fcast_ids$trunc == .x)])
@@ -215,36 +226,34 @@ convolution_samples <- purrr::map_df(.x = sort(unique(fcast_ids$trunc)),
                 return(out_samples)
                 
               }) %>%
-  bind_rows()
+    bind_rows()
 
-convolution_summary <- forecast_summary(samples = convolution_samples,
+  convolution_summary <- forecast_summary(samples = convolution_samples,
                                               quantiles = c(0.01, 0.025,
                                                             seq(from = 0.05, to = 0.95, by = 0.05),
                                                             0.975, 0.99)) %>%
-  mutate(horizon = as.numeric(date_horizon - fdate)/7,
-         forecast_from = fdate) %>%
-  filter(date_horizon %in% fhorizons,
-         quantile_label != "upper_0") %>%
-  select(-quantile_label)
+    mutate(horizon = as.numeric(date_horizon - fdate)/7,
+           forecast_from = fdate) %>%
+    filter(date_horizon %in% fhorizons,
+           quantile_label != "upper_0") %>%
+    select(-quantile_label)
 
 
-file_name <- paste0("convolution_", fdate, ".csv")
-write_csv(convolution_summary,
-          file = here::here("data", "forecasts-raw", "case_convolution", file_name))
+  file_name <- paste0("convolution_", fdate, ".csv")
+  write_csv(convolution_summary,
+            file = here::here("data", "forecasts-raw", "case_convolution", file_name))
 
-format_forecast(forecast_summary = convolution_summary,
-                file_name = paste0(fdate + 1, "-epiforecasts-caseconv.csv"),
-                file_path = here::here("data-processed", "epiforecasts-caseconv"))
-
+  format_forecast(forecast_summary = convolution_summary,
+                  file_name = paste0(fdate + 1, "-epiforecasts-caseconv.csv"),
+                  file_path = here::here("data-processed", "epiforecasts-caseconv"))
+}
 
 # Vis model forecasts -----------------------------------------------------
 
 g_admissions <- plot_forecasts(dat_obs = raw_dat,
                                forecast_date = fdate,
                                regions = fcast_ids$id,
-                               models = c("Time series ensemble",
-                                          "ARIMA regression",
-                                          "Case-convolution"))
+                               models = models)
 
 ggsave(plot = g_admissions,
        filename = here::here("data", "figures", "current_admissions_forecast.pdf"),
@@ -254,4 +263,3 @@ file.copy(
   Sys.glob(here::here("data-processed", "*", "*")),
   here::here("data", "forecasts-format")
 )
-

@@ -1,9 +1,9 @@
 
 # Load case data ----------------------------------------------------------
 
-load_jhu_cases <- function(weekly = TRUE, end_date){
+load_ecdc_cases <- function(weekly = TRUE, end_date){
   
-  dat_raw <- read_csv(file = "https://raw.githubusercontent.com/epiforecasts/covid19-forecast-hub-europe/main/data-truth/JHU/truth_JHU-Incident%20Cases.csv") %>%
+  dat_raw <- read_csv(file = "https://raw.githubusercontent.com/covid19-forecast-hub-europe/covid19-forecast-hub-europe/main/data-truth/ECDC/truncated_ECDC-Incident%20Cases.csv") %>%
     rename(cases = value)
   
   min_max_date <- dat_raw %>%
@@ -21,32 +21,14 @@ load_jhu_cases <- function(weekly = TRUE, end_date){
   out <- dat_raw %>%
     filter(date <= end_date) %>%
     complete(nesting(location, location_name),
-             date = seq.Date(from = min_max_date, to = as.Date(end_date), by = "day")) %>%
+             date = seq.Date(from = min_max_date, to = as.Date(end_date), by = "week")) %>%
     arrange(location, date) %>%
     group_by(location) %>%
     mutate(cases_lag = lag(cases, 7),
            cases = ifelse(is.na(cases), cases_lag, cases)) %>%
     ungroup() %>%
-    select(-cases_lag)
-  
-  if(weekly){
-    
-    out <- out %>%
-      mutate(week = EuroForecastHub::date_to_week_end(
-        date,
-	config_file = paste0(
-          "https://raw.githubusercontent.com/covid19-forecast-hub-europe/",
-	  "covid19-forecast-hub-europe/main/project-config.json"
-      ))) %>%
-      group_by(location, location_name, week) %>%
-      dplyr::summarise(n = n(),
-                       cases = sum(cases),
-                       .groups = "drop") %>%
-      filter(n == 7) %>%
-      select(-n)
-    
-    
-  }
+    select(-cases_lag) %>%
+    select(location_name, location, week = date, cases)
   
   return(out)
   
@@ -73,7 +55,7 @@ load_ecdc_hosps <- function(){
 
 load_data <- function(end_date){
   
-  case_data <- load_jhu_cases(weekly = TRUE, end_date = end_date)
+  case_data <- load_ecdc_cases(weekly = TRUE, end_date = end_date)
   adm_data <- load_ecdc_hosps()
   
   out <- case_data %>%
