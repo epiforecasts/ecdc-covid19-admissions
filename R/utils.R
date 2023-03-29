@@ -3,27 +3,27 @@
 get_forecast_ids <- function(dat, forecast_date, max_trunc = 7) {
   
   # Get last reported week
-  last_rep <- raw_dat %>%
-    filter(!is.na(adm),
-           week <= forecast_date) %>%
-    group_by(location) %>%
-    filter(week == max(week)) %>%
+  last_rep <- dat %>%
+    filter(!is.na(value),
+           date <= forecast_date) %>%
+    group_by(id) %>%
+    filter(date == max(date)) %>%
     ungroup() %>%
-    filter(week >= forecast_date - 8*7) %>%
-    select(location, last_rep = week) %>%
+    filter(date >= forecast_date - 8*7) %>%
+    select(id, last_rep = date) %>%
     mutate(trunc = as.numeric(forecast_date - last_rep)) %>%
     filter(trunc <= max_trunc)
   
   # Remove locations missing data in the last 8 weeks
-  out <- raw_dat %>%
-    left_join(last_rep, by = "location") %>%
-    filter(week >= last_rep - 8*7,
-           week < last_rep) %>%
-    group_by(location, last_rep, trunc) %>%
-    summarise(all_adm = sum(adm),
+  out <- dat %>%
+    left_join(last_rep, by = "id") %>%
+    filter(date >= last_rep - 8*7,
+           date < last_rep) %>%
+    group_by(id, last_rep, trunc) %>%
+    summarise(all = sum(value),
               .groups = "drop") %>% 
-    filter(!is.na(all_adm)) %>%
-    select(id = location, last_rep, trunc)
+    filter(!is.na(all)) %>%
+    select(id = id, last_rep, trunc)
   
   return(out)
   
