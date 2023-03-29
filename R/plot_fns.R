@@ -59,7 +59,7 @@ plot_forecasts <- function(dat_obs, forecast_date, regions, models) {
   
   # Add observed data
   plot_obs <- dat_obs %>%
-    filter(location %in% regions,
+    filter(id %in% regions,
            date >= as.Date(forecast_date) - 8*7,
            date < as.Date(forecast_date)) %>%
     mutate(date = date + 6)
@@ -67,7 +67,7 @@ plot_forecasts <- function(dat_obs, forecast_date, regions, models) {
     ggplot(aes(x = date, y = value)) +
     geom_vline(xintercept = Sys.Date(), lty = 2, col = "grey50") +
     geom_line() +
-    facet_wrap(target_variable ~ location_name, scales = "free_y") +
+    facet_wrap(target_variable ~ id, scales = "free_y") +
     scale_x_date(breaks = seq.Date(from = forecast_date - 8*7,
                                    to = forecast_date + 4*7,
                                    by = "2 weeks"),
@@ -94,12 +94,11 @@ plot_forecasts <- function(dat_obs, forecast_date, regions, models) {
     bind_rows() %>%
     filter(quantile %in% c(0.05, 0.25, 0.5, 0.75, 0.95)) %>%
     mutate(quantile = paste0("q", quantile)) %>%
-    rename(location = id) %>%
-    pivot_wider(id_cols = !any_of(c("quantile", "value")), 
+    pivot_wider(id_cols = !any_of(c("quantile", "value")),
 		names_from = quantile) %>%
-    left_join(plot_obs %>% select(contains("location")) %>% unique(),
-              by = "location") %>%
-    filter(!is.na(location_name))
+    left_join(plot_obs %>% select(id) %>% unique(),
+              by = "id") %>%
+    filter(!is.na(id))
   
   if(!missing(models)) {
     dat_forecast <- dat_forecast %>%

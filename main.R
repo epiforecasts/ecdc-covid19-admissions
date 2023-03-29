@@ -91,7 +91,7 @@ format_forecast(forecast_summary = tsensemble_summary,
 
 models = c("Time series ensemble")
 
-g_admissions <- plot_forecasts(dat_obs = raw_dat,
+g_admissions <- plot_forecasts(dat_obs = dat,
                                forecast_date = fdate,
                                regions = fcast_ids$id,
                                models = models)
