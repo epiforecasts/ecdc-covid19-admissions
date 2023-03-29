@@ -1,53 +1,23 @@
 
 # Load case data ----------------------------------------------------------
 
-load_ecdc_cases <- function(weekly = TRUE, end_date){
-  
+load_ecdc_cases <- function() {
+
   dat_raw <- read_csv(file = "https://raw.githubusercontent.com/covid19-forecast-hub-europe/covid19-forecast-hub-europe/main/data-truth/ECDC/truncated_ECDC-Incident%20Cases.csv") %>%
-    rename(cases = value)
-  
-  min_max_date <- dat_raw %>%
-    group_by(location) %>%
-    filter(date == max(date)) %>%
-    ungroup() %>%
-    filter(date == min(date)) %>%
-    pull(date) %>%
-    unique()
-  
-  if(as.Date(end_date) < max(dat_raw$date)) {
-    end_date <- max(dat_raw$date)
-  }
-  
-  out <- dat_raw %>%
-    filter(date <= end_date) %>%
-    complete(nesting(location, location_name),
-             date = seq.Date(from = min_max_date, to = as.Date(end_date), by = "week")) %>%
-    arrange(location, date) %>%
-    group_by(location) %>%
-    mutate(cases_lag = lag(cases, 7),
-           cases = ifelse(is.na(cases), cases_lag, cases)) %>%
-    ungroup() %>%
-    select(-cases_lag) %>%
-    select(location_name, location, week = date, cases)
-  
-  return(out)
-  
+    mutate(target_variable = "inc case")
+
+  return(dat_raw)
 }
 
 
 # Load admissions data ----------------------------------------------------
 
-load_ecdc_hosps <- function(){
+load_owid_hosps <- function(){
  
   dat_raw <- read_csv(file = "https://raw.githubusercontent.com/epiforecasts/covid19-forecast-hub-europe/main/data-truth/OWID/truncated_OWID-Incident%20Hospitalizations.csv") %>%
-    rename(adm = value)
+    mutate(target_variable = "inc hosp")
   
-  out <- dat_raw %>%
-    rename(week = date) %>%
-    select(location_name, location, week, adm)
-  
-  return(out)
-  
+  return(dat_raw)
 }
 
 
@@ -55,16 +25,14 @@ load_ecdc_hosps <- function(){
 
 load_data <- function(end_date){
   
-  case_data <- load_ecdc_cases(weekly = TRUE, end_date = end_date)
-  adm_data <- load_ecdc_hosps()
+  case_data <- load_ecdc_cases()
+  adm_data <- load_owid_hosps()
   
-  out <- case_data %>%
-    left_join(adm_data, by = c("location", "location_name", "week"))
-  
+  out <- bind_rows(case_data, adm_data)
+
   return(out)
   
 }
-
 
 # Load ensemble case forecast ---------------------------------------------
 

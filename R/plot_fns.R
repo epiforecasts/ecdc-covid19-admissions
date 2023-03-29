@@ -6,12 +6,12 @@ plot_ensemble <- function(dat_obs, dat_for, forecast_date, regions) {
   # Add observed data
   plot_obs <- dat_obs %>%
     filter(location %in% regions,
-           week >= as.Date(forecast_date) - 8*7,
-           week <= as.Date(forecast_date))
+           date >= as.Date(forecast_date) - 8*7,
+           date <= as.Date(forecast_date))
   g <- plot_obs %>%
-    ggplot(aes(x = week, y = cases)) +
+    ggplot(aes(x = date, y = value)) +
     geom_line() +
-    facet_wrap(. ~ location_name, scales = "free_y") +
+    facet_wrap(target_variable ~ location_name, scales = "free_y") +
     scale_x_date(breaks = seq.Date(from = forecast_date - 8*7,
                                    to = forecast_date + 4*7,
                                    by = "2 weeks"),
@@ -60,21 +60,21 @@ plot_forecasts <- function(dat_obs, forecast_date, regions, models) {
   # Add observed data
   plot_obs <- dat_obs %>%
     filter(location %in% regions,
-           week >= as.Date(forecast_date) - 8*7,
-           week < as.Date(forecast_date)) %>%
-    mutate(week = week + 6)
+           date >= as.Date(forecast_date) - 8*7,
+           date < as.Date(forecast_date)) %>%
+    mutate(date = date + 6)
   g <- plot_obs %>%
-    ggplot(aes(x = week, y = adm)) +
+    ggplot(aes(x = date, y = value)) +
     geom_vline(xintercept = Sys.Date(), lty = 2, col = "grey50") +
     geom_line() +
-    facet_wrap(. ~ location_name, scales = "free_y") +
+    facet_wrap(target_variable ~ location_name, scales = "free_y") +
     scale_x_date(breaks = seq.Date(from = forecast_date - 8*7,
                                    to = forecast_date + 4*7,
                                    by = "2 weeks"),
                  date_labels = "%d %b") +
     scale_y_continuous(limits = c(0, NA)) +
     labs(x = "Week ending",
-         y = "Week admissions",
+         y = "Week incidence",
          title = format.Date(forecast_date, format = "%d %B %Y"),
          col = "Model",
          fill = "Model") +
