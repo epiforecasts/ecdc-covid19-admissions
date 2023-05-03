@@ -33,7 +33,7 @@ fhorizons <- seq.Date(from = fdate - 2 * 7, to = fdate + 4 * 7, by = "week")
 
 tsensemble_summary <- list()
 
-for (target in c("inc hosp", "inc case")) {
+for (target in c("inc hosp", "inc case", "inc death")) {
   obs_dat <- dat |>
     dplyr::filter(id %in% fcast_ids$id,
                   target_variable == target)
