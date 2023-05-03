@@ -9,6 +9,13 @@ load_ecdc_cases <- function() {
   return(dat_raw)
 }
 
+load_ecdc_deaths <- function() {
+
+  dat_raw <- read_csv(file = "https://raw.githubusercontent.com/covid19-forecast-hub-europe/covid19-forecast-hub-europe/main/data-truth/ECDC/truncated_ECDC-Incident%20Deaths.csv") %>%
+    mutate(target_variable = "inc death")
+
+  return(dat_raw)
+}
 
 # Load admissions data ----------------------------------------------------
 
@@ -26,9 +33,10 @@ load_owid_hosps <- function(){
 load_data <- function(end_date){
   
   case_data <- load_ecdc_cases()
+  death_data <- load_ecdc_deaths()
   adm_data <- load_owid_hosps()
   
-  out <- bind_rows(case_data, adm_data)
+  out <- bind_rows(adm_data, case_data, death_data)
 
   return(out)
   
