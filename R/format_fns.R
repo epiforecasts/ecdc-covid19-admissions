@@ -55,7 +55,7 @@ format_forecast = function(forecast_summary, file_name, file_path) {
     select(forecast_date,
            target,
            target_end_date = date_horizon,
-           location = id,
+           location,
            type,
            quantile,
            value)
