@@ -23,14 +23,16 @@ dir.create(here::here("data-processed", "epiforecasts-tsensemble"))
 # Load data ---------------------------------------------------------------
 dat <- load_data(end_date = fdate)
 
-obs_dat <- dat %>%
+id_dat <- dat %>%
   unite(col = "id", location, target_variable, sep = "-") %>%
-  select(id, date, value) %>%
-  dplyr::filter(id %in% fcast_ids$id)
+  select(id, date, value)
 
-fcast_ids <- get_forecast_ids(dat = obs_dat,
+fcast_ids <- get_forecast_ids(dat = id_dat,
                               forecast_date = fdate,
                               max_trunc = 30)
+
+obs_dat <- id_dat |>
+  dplyr::filter(id %in% fcast_ids$id)
 
 # Dates of forecast horizons (to allow for truncated data)
 fhorizons <- seq.Date(from = fdate - 2 * 7, to = fdate + 4 * 7, by = "week")
