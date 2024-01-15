@@ -50,7 +50,7 @@ format_forecast = function(forecast_summary, file_name, file_path) {
   out_int <- forecast_summary %>%
     ungroup() %>%
     mutate(type = "quantile",
-           forecast_date = forecast_from + 1,
+           forecast_date = forecast_from + 2,
            target = paste0(horizon, " wk ahead ", target_variable)) %>%
     select(forecast_date,
            target,
