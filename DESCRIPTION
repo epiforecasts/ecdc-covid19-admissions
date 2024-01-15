@@ -30,4 +30,4 @@ Depends:
 Remotes:
   sophiemeakin/technocolour,
   epiforecasts/EpiSoon,
-  covid19-forecast-hub-europe/EuroForecastHub
+  european-modelling-hubs/EuroForecastHub
