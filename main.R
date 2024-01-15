@@ -78,7 +78,7 @@ file_name <- paste0("timeseries_ensemble_", fdate, ".csv")
 write_csv(tsensemble_summary,
           file = here::here("data", "forecasts-raw", "timeseries_ensemble", file_name))
 format_forecast(forecast_summary = tsensemble_summary,
-                file_name = paste0(fdate + 1, "-epiforecasts-tsensemble.csv"),
+                file_name = paste0(fdate + 2, "-epiforecasts-tsensemble.csv"),
                 file_path = here::here("data-processed", "epiforecasts-tsensemble"))
 
 models = c("Time series ensemble")
