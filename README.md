@@ -1,5 +1,7 @@
 # COVID-19 hospital admissions forecasts for the ECDC Forecast Hub
 
+> **Archived.** No longer maintained; last updated January 2024. Fork of [sophiemeakin/ecdc-covid19-admissions](https://github.com/sophiemeakin/ecdc-covid19-admissions).
+
 ## Current forecasts
 
 The most recent forecasts (from 27 November 2021) cover the following
